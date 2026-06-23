@@ -1,11 +1,225 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-<meta charset="utf-8">
-<title>狗狗住宿契約</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>狗狗住宿契約簽署</title>
+  <style>
+    body {
+      font-family: "Microsoft JhengHei", Arial, sans-serif;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 18px;
+      line-height: 1.7;
+      background: #fafafa;
+    }
+    h1 { text-align: center; }
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+    .contract {
+      max-height: 260px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 12px;
+      background: #fffdf7;
+    }
+    canvas {
+      width: 100%;
+      height: 200px;
+      border: 1px solid #333;
+      background: white;
+      touch-action: none;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      font-size: 17px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .primary { background: #333; color: white; }
+    .secondary { background: #ddd; }
+    .notice { color: #666; font-size: 14px; }
+  </style>
 </head>
 <body>
-<h1>狗狗住宿契約系統測試成功</h1>
-<p>GitHub Pages 已上線</p>
+
+<h1>狗狗住宿契約簽署</h1>
+
+<div class="card">
+  <label>飼主姓名</label>
+  <input id="name" type="text" placeholder="請輸入姓名">
+
+  <label>手機</label>
+  <input id="phone" type="tel" placeholder="請輸入手機">
+
+  <label>Email</label>
+  <input id="email" type="email" placeholder="請輸入 Email">
+
+  <label>身分證末四碼</label>
+  <input id="idLast4" type="text" maxlength="4" placeholder="例如：1234">
+
+  <label>狗狗姓名</label>
+  <input id="petName" type="text" placeholder="請輸入狗狗姓名">
+
+  <label>契約類型</label>
+  <select id="contractType">
+    <option value="狗狗住宿契約">狗狗住宿契約</option>
+  </select>
+</div>
+
+<div class="card">
+  <h2>契約內容</h2>
+  <div class="contract" id="contractText">
+    <p>本人確認委託貴店提供狗狗住宿照護服務，並已詳閱下列事項：</p>
+    <p>一、飼主應提供正確之聯絡方式、寵物健康狀況、飲食習慣及特殊照護需求。</p>
+    <p>二、住宿期間如寵物發生緊急健康狀況，店家得先行聯繫飼主；若無法即時聯繫，飼主同意店家得依現場狀況協助送醫，相關費用由飼主負擔。</p>
+    <p>三、飼主確認寵物無隱瞞之傳染性疾病、攻擊行為或其他可能影響住宿安全之情形。</p>
+    <p>四、住宿期間若因寵物自身體質、既有疾病、年齡因素、情緒緊迫或不可歸責於店家之原因造成異常，雙方應依實際情況協調處理。</p>
+    <p>五、本人同意以本線上簽署紀錄作為契約確認依據。</p>
+  </div>
+
+  <label>
+    <input id="agree" type="checkbox" style="width:auto;">
+    我已閱讀並同意上述契約內容
+  </label>
+</div>
+
+<div class="card">
+  <h2>簽名</h2>
+  <canvas id="signature"></canvas>
+  <button class="secondary" onclick="clearSignature()">清除簽名</button>
+</div>
+
+<div class="card">
+  <button class="primary" onclick="submitContract()">確認送出</button>
+  <p class="notice">送出後資料會寫入 Google 試算表。</p>
+</div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBKI1B_hknLWJLapCoZKsaNBrsXvt3BMTv01S5zsiZlVWgADHRBMjnDSP-VwVh2dEc/exec";
+
+const canvas = document.getElementById("signature");
+const ctx = canvas.getContext("2d");
+let drawing = false;
+let hasSignature = false;
+
+function resizeCanvas() {
+  const ratio = window.devicePixelRatio || 1;
+  const width = canvas.offsetWidth;
+  const height = 200;
+  canvas.width = width * ratio;
+  canvas.height = height * ratio;
+  ctx.scale(ratio, ratio);
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+}
+resizeCanvas();
+
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const point = e.touches ? e.touches[0] : e;
+  return {
+    x: point.clientX - rect.left,
+    y: point.clientY - rect.top
+  };
+}
+
+function startDraw(e) {
+  drawing = true;
+  hasSignature = true;
+  const pos = getPos(e);
+  ctx.beginPath();
+  ctx.moveTo(pos.x, pos.y);
+  e.preventDefault();
+}
+
+function draw(e) {
+  if (!drawing) return;
+  const pos = getPos(e);
+  ctx.lineTo(pos.x, pos.y);
+  ctx.stroke();
+  e.preventDefault();
+}
+
+function stopDraw() {
+  drawing = false;
+}
+
+canvas.addEventListener("mousedown", startDraw);
+canvas.addEventListener("mousemove", draw);
+canvas.addEventListener("mouseup", stopDraw);
+canvas.addEventListener("mouseleave", stopDraw);
+canvas.addEventListener("touchstart", startDraw);
+canvas.addEventListener("touchmove", draw);
+canvas.addEventListener("touchend", stopDraw);
+
+function clearSignature() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  hasSignature = false;
+}
+
+async function submitContract() {
+  const data = {
+    name: document.getElementById("name").value.trim(),
+    phone: document.getElementById("phone").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    idLast4: document.getElementById("idLast4").value.trim(),
+    petName: document.getElementById("petName").value.trim(),
+    contractType: document.getElementById("contractType").value,
+    contractText: document.getElementById("contractText").innerText,
+    agree: document.getElementById("agree").checked ? "已同意" : "未同意",
+    signature: canvas.toDataURL("image/png"),
+    userAgent: navigator.userAgent
+  };
+
+  if (!data.name || !data.phone || !data.email || !data.petName) {
+    alert("請填寫姓名、手機、Email、狗狗姓名");
+    return;
+  }
+
+  if (!document.getElementById("agree").checked) {
+    alert("請勾選已閱讀並同意契約內容");
+    return;
+  }
+
+  if (!hasSignature) {
+    alert("請完成簽名");
+    return;
+  }
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      body: JSON.stringify(data)
+    });
+
+    alert("已送出，請確認 Google 試算表是否新增資料。");
+  } catch (error) {
+    alert("送出失敗，請稍後再試。");
+  }
+}
+</script>
+
 </body>
 </html>
